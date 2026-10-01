@@ -2,6 +2,8 @@ import json
 import platform
 import os
 import shutil
+import ctypes
+from ctypes import wintypes
 from pathlib import Path
 from datetime import datetime
 
@@ -51,8 +53,28 @@ def collect_memory_unix():
 
 
 def collect_memory_windows():
-    # Здесь используется Windows API через ctypes.
-    pass
+    class MemoryStatusEx(ctypes.Structure):
+        _fields_ = [
+            ("dwLength", wintypes.DWORD),
+            ("dwMemoryLoad", wintypes.DWORD),
+            ("ullTotalPhys", wintypes.DWORDLONG),
+            ("ullAvailPhys", wintypes.DWORDLONG),
+            ("ullTotalPageFile", wintypes.DWORDLONG),
+            ("ullAvailPageFile", wintypes.DWORDLONG),
+            ("ullTotalVirtual", wintypes.DWORDLONG),
+            ("ullAvailVirtual", wintypes.DWORDLONG),
+            ("ullAvailExtendedVirtual", wintypes.DWORDLONG),
+        ]
+
+    memory_status = MemoryStatusEx()
+    memory_status.dwLength = ctypes.sizeof(memory_status)
+
+    if not ctypes.windll.kernel32.GlobalMemoryStatusEx(
+        ctypes.byref(memory_status)
+    ):
+        raise ctypes.WinError()
+
+    return memory_status.ullTotalPhys
 
 
 def collect_memory():
