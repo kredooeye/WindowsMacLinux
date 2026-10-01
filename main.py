@@ -3,11 +3,13 @@ import platform
 import os
 import shutil
 from pathlib import Path
+from datetime import datetime
 
 def bytes_to_gb(value):
     return round(value / (1024 ** 3), 2)
 
 def collect_common_info():
+    collected_at = datetime.now().astimezone()
     system = platform.uname()
     logical_cores = os.cpu_count()
 
@@ -17,23 +19,29 @@ def collect_common_info():
     disk = shutil.disk_usage(Path.cwd().anchor)
 
     return {
+        "python": {
+            "version": platform.python_version(),
+            "implementation": platform.python_implementation()
+        },
         "system": {
             "name": system.system,
             "hostname":system.node,
             "kernel_release": system.release,
             "kernel_version": system.version,
-            "architexture": system.machine,
+            "architecture": system.machine,
         },
-
         "processor": {
             "logical_cores": logical_cores,
         },
-
         "disk": {
             "total_gb": bytes_to_gb(disk.total),
             "free_gb": bytes_to_gb(disk.free),
         },
-
+        "collection": {
+            "date": collected_at.date().isoformat(),
+            "time": collected_at.time().isoformat(timespec="seconds"),
+            "datetime": collected_at.isoformat(timespec="seconds"),
+        }
     }
 
 def collect_memory_unix():
