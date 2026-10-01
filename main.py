@@ -57,21 +57,24 @@ def collect_memory_windows():
         _fields_ = [
             ("dwLength", wintypes.DWORD),
             ("dwMemoryLoad", wintypes.DWORD),
-            ("ullTotalPhys", wintypes.DWORDLONG),
-            ("ullAvailPhys", wintypes.DWORDLONG),
-            ("ullTotalPageFile", wintypes.DWORDLONG),
-            ("ullAvailPageFile", wintypes.DWORDLONG),
-            ("ullTotalVirtual", wintypes.DWORDLONG),
-            ("ullAvailVirtual", wintypes.DWORDLONG),
-            ("ullAvailExtendedVirtual", wintypes.DWORDLONG),
+            # DWORDLONG is an unsigned 64-bit integer in the WinAPI.
+            ("ullTotalPhys", ctypes.c_ulonglong),
+            ("ullAvailPhys", ctypes.c_ulonglong),
+            ("ullTotalPageFile", ctypes.c_ulonglong),
+            ("ullAvailPageFile", ctypes.c_ulonglong),
+            ("ullTotalVirtual", ctypes.c_ulonglong),
+            ("ullAvailVirtual", ctypes.c_ulonglong),
+            ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
         ]
 
     memory_status = MemoryStatusEx()
     memory_status.dwLength = ctypes.sizeof(memory_status)
 
-    if not ctypes.windll.kernel32.GlobalMemoryStatusEx(
-        ctypes.byref(memory_status)
-    ):
+    global_memory_status_ex = ctypes.windll.kernel32.GlobalMemoryStatusEx
+    global_memory_status_ex.argtypes = [ctypes.POINTER(MemoryStatusEx)]
+    global_memory_status_ex.restype = wintypes.BOOL
+
+    if not global_memory_status_ex(ctypes.byref(memory_status)):
         raise ctypes.WinError()
 
     return memory_status.ullTotalPhys
